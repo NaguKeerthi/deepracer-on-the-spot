@@ -1,33 +1,93 @@
-def reward_function(params):
-    '''
-    Example of penalize steering, which helps mitigate zig-zag behaviors
-    '''
-    
-    # Read input parameters
-    distance_from_center = params['distance_from_center']
+import math
+def reward_function (params) :
+# Extract input parameters
     track_width = params['track_width']
-    steering = abs(params['steering_angle']) # Only need the absolute steering angle
-
-    # Calculate 3 marks that are farther and father away from the center line
+    distance_from_center = params['distance_from_center']
+    speed = params['speed']
+    steering_angle = abs (params['steering_angle'])
+    progress = params['progress']
+    steps = params['steps']
+    is_offtrack = params['is_offtrack']
+    all_wheels_on_track = params ['all_wheels_on_track']
+    closest_waypoints = params['closest_waypoints']
+    heading = params['heading']
+    waypoints = params['waypoints']
+    steering_angle_change = params.get('steering_angle_change',0.0)
+    prev_speed = params.get('prev_speed', speed)
+    # Define markers for distance from center
     marker_1 = 0.1 * track_width
     marker_2 = 0.25 * track_width
     marker_3 = 0.5 * track_width
-
-    # Give higher reward if the car is closer to center line and vice versa
+    # Initialize reward
+    reward = 1.0
+    # Reward for staying closer to the center line
     if distance_from_center <= marker_1:
-        reward = 1
+        reward *= 1.5
     elif distance_from_center <= marker_2:
-        reward = 0.5
+        reward *= 1.0
     elif distance_from_center <= marker_3:
-        reward = 0.1
+        reward *= 0.5 
     else:
-        reward = 1e-3  # likely crashed/ close to off track
-
-    # Steering penality threshold, change the number based on your action space setting
-    ABS_STEERING_THRESHOLD = 15
-
-    # Penalize reward if the car is steering too much
-    if steering > ABS_STEERING_THRESHOLD:
+        reward *= 0.1 # likely crashed/close to off track
+    # Penalize if the car is off track
+    if is_offtrack:
+        reward = 1e-3
+        return float (reward)
+    # Return early if off track
+    # Calculate track direction and difference from heading
+    next_waypoint = waypoints[closest_waypoints[1]]
+    prev_waypoint = waypoints[closest_waypoints[0]]
+    track_direction = math.atan2(next_waypoint[1] - prev_waypoint[1], next_waypoint[0] - prev_waypoint[0])
+    track_direction = math.degrees(track_direction)
+    direction_diff = abs(track_direction - heading)
+    #speed based on whether the path is straight or curved
+    STRAIGHT_PATH_THRESHOLD = 8.0
+    # Threshold for straight path
+    if direction_diff < STRAIGHT_PATH_THRESHOLD:
+    # Encourage higher speed on straight paths
+        SPEED_THRESHOLD_STRAIGHT = 4.5
+        if speed > SPEED_THRESHOLD_STRAIGHT:
+            reward *= 1.5
+        elif speed < 2.5:# Penalize if too slow on straight paths
+            reward *=0.8
+    else:
+    # Encourage slower speed on curves
+        SPEED_THRESHOLD_CURVE = 3.0
+        if speed > SPEED_THRESHOLD_CURVE:
+            reward *= 0.8
+    # Reward for maintaining optimal speed
+    OPTIMAL_SPEED = 3.5
+    # if speed == OPTIMAL_SPEED:
+    #     reward *= 1.2
+    # Penalize excessive braking
+    BRAKING_THRESHOLD = 0.4
+    if prev_speed - speed > BRAKING_THRESHOLD: 
         reward *= 0.8
-
-    return float(reward)
+    # Penalize too much steering to prevent zig-zag behavior
+    ABS_STEERING_THRESHOLD = 5.0
+    if steering_angle > ABS_STEERING_THRESHOLD:
+        reward *= 0.2
+    # Reward for smooth steering
+    SMOOTH_STEERING_THRESHOLD = 3.0
+    if steering_angle_change < SMOOTH_STEERING_THRESHOLD:
+        reward *= 1.6
+    # Penalize for oscillation (rapid back-and-forth steering)
+    OSCILLATION_THRESHOLD = 15.0
+    if abs (steering_angle_change) > OSCILLATION_THRESHOLD:
+        reward *= 0.7
+    # Penalize large direction differences
+    DIRECTION_THRESHOLD = 5.0
+    if direction_diff > DIRECTION_THRESHOLD:
+        reward *= 0.5
+    # Progress-based reward
+    reward += (progress / 100.0) * 1.5
+    # Additional reward for completing the track faster
+    TOTAL_NUM_STEPS = 300
+    if progress == 100:
+        reward += 100 * (1 - (steps / TOTAL_NUM_STEPS))
+    # Reward for consistency in speed
+    # SPEED_CONSISTENCY_THRESHOLD = 0.2
+    # if abs (speed - prev_speed)< SPEED_CONSISTENCY_THRESHOLD:
+    #     reward *= 1.2
+    
+    return float (reward)
