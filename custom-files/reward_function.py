@@ -50,7 +50,9 @@ def reward_function (params) :
     # Threshold for straight path
     if closest_waypoints[1] in stwp:
         SPEED_THRESHOLD_STRAIGHT = 2.5
-        if speed > SPEED_THRESHOLD_STRAIGHT:
+        if speed > 3:
+            reward *= 1.5
+        elif speed > 2.5:
             reward *= 1.2
         elif speed < 1.5:# Penalize if too slow on straight paths
             reward *=0.8
@@ -59,7 +61,7 @@ def reward_function (params) :
     else:
     # Encourage slower speed on curves
         SPEED_THRESHOLD_CURVE = 3.0
-        if direction_diff > 10:
+        if direction_diff > 8:
             reward *= 0.8
         else:
             if speed > 1.5:
@@ -77,13 +79,13 @@ def reward_function (params) :
     # if steering_angle > ABS_STEERING_THRESHOLD:
     #     reward *= 0.2
     # Reward for smooth steering
-    # SMOOTH_STEERING_THRESHOLD = 3.0
-    # if steering_angle_change < SMOOTH_STEERING_THRESHOLD:
-    #     reward *= 1.6
+    SMOOTH_STEERING_THRESHOLD = 3.0
+    if steering_angle_change < SMOOTH_STEERING_THRESHOLD:
+        reward *= 1.6
     # Penalize for oscillation (rapid back-and-forth steering)
-    # OSCILLATION_THRESHOLD = 15.0
-    # if abs (steering_angle_change) > OSCILLATION_THRESHOLD:
-    #     reward *= 0.7
+    OSCILLATION_THRESHOLD = 15.0
+    if abs (steering_angle_change) > OSCILLATION_THRESHOLD:
+        reward *= 0.7
     # Penalize large direction differences
     # DIRECTION_THRESHOLD = 5.0
     # if direction_diff > DIRECTION_THRESHOLD:
