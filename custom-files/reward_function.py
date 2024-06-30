@@ -51,9 +51,15 @@ def reward_function (params) :
     if closest_waypoints[1] in stwp:
         SPEED_THRESHOLD_STRAIGHT = 2.5
         if speed > 3:
-            reward *= 1.5
+            if direction_diff< 8: 
+                reward *= 1.5
+            else:
+                reward*=1.3
         elif speed > 2.5:
-            reward *= 1.2
+            if direction_diff< 8: 
+                reward *= 1.2
+            else:
+                reward*=1.1
         elif speed < 1.5:# Penalize if too slow on straight paths
             reward *=0.8
     # Encourage higher speed on straight paths
