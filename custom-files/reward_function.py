@@ -108,7 +108,7 @@ def reward_function (params) :
     TOTAL_NUM_STEPS = 320
     if progress == 100:
         reward += 100 * (1.5 - (steps / TOTAL_NUM_STEPS))
-    Reward for consistency in speed
+    #Reward for consistency in speed
     # SPEED_CONSISTENCY_THRESHOLD = 0.2
     # if abs (speed - prev_speed)< SPEED_CONSISTENCY_THRESHOLD:
     #     reward *= 1.2
