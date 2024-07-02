@@ -129,7 +129,7 @@ def reward_function(params):
     # if prev_speed - speed > BRAKING_THRESHOLD:
     #     reward *= 0.8
 
-    # Penalize for too much steering (to prevent zig-zag behavior)
+    #Penalize for too much steering (to prevent zig-zag behavior)
     # ABS_STEERING_THRESHOLD = 0.3
     # if steering_angle > ABS_STEERING_THRESHOLD:
     #     reward *= 0.4
@@ -151,18 +151,18 @@ def reward_function(params):
     if direction_diff <= DIRECTION_THRESHOLD:
         reward *= 1.4
 
-    # Apexing: Reward for being close to the inside edge of the turn (apex)
-    # apex_threshold = 0.2 * track_width
-    # if distance_from_center < apex_threshold:
-    #     reward += 1.0
-
-    # Reward for maximizing speed on straight sections
-    if curvature < 0.1 and speed > optimal_speed:
+    #Apexing: Reward for being close to the inside edge of the turn (apex)
+    apex_threshold = 0.2 * track_width
+    if distance_from_center < apex_threshold:
         reward += 1.0
 
-    # Penalize for unnecessary steering adjustments
-    # if steering_angle_change > 0.3:
-    #     reward *= 0.8
+    # Reward for maximizing speed on straight sections
+    if curvature < 0.1 and speed > 3:
+        reward += 1.0
+
+    #Penalize for unnecessary steering adjustments
+    if steering_angle_change > 0.3:
+        reward *= 0.8
 
     # Use PID controller for steering correction
     steering_error = steering_angle_change
