@@ -1,6 +1,5 @@
 import math
 import numpy as np
-from shapely.geometry import Point, LineString
 
 # Define the PID controller class
 class PIDController:
