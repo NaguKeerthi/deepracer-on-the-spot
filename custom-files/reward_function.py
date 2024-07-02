@@ -1,5 +1,6 @@
 import math
 import numpy as np
+from shapely.geometry import Point, LineString
 
 # Define the PID controller class
 class PIDController:
@@ -90,16 +91,10 @@ def reward_function(params):
             # else:
             reward*=1.5
         if speed > 1.5:
-            if direction_diff< 5: 
+            if direction_diff< 5:
                 reward *= 1.1
-        elif speed < 1.5:# Penalize if too slow on straight paths
-            reward *=0.8
-    else :
-        if direction_diff > 7:
-            reward *= 0.8
-        else:
-            if speed > 1.5:
-                reward*=1.2
+        elif speed < 1.5:# Penalize :
+            reward*=1.2
     # if curvature < 0.1:
     #     optimal_speed = 3.0  # Max speed on straight paths
     # else:
@@ -122,13 +117,12 @@ def reward_function(params):
     # SPEED_STABILITY_THRESHOLD = 0.1
     # if np.abs(speed - prev_speed) < SPEED_STABILITY_THRESHOLD:
     #     reward += 1.5  # Increased emphasis on smooth speed transitions
-
     # Penalize for excessive braking
     # BRAKING_THRESHOLD = 0.3
     # if prev_speed - speed > BRAKING_THRESHOLD:
     #     reward *= 0.8
 
-    #Penalize for too much steering (to prevent zig-zag behavior)
+    # Penalize for too much steering (to prevent zig-zag behavior)
     # ABS_STEERING_THRESHOLD = 0.3
     # if steering_angle > ABS_STEERING_THRESHOLD:
     #     reward *= 0.4
@@ -150,18 +144,18 @@ def reward_function(params):
     if direction_diff <= DIRECTION_THRESHOLD:
         reward *= 1.4
 
-    #Apexing: Reward for being close to the inside edge of the turn (apex)
-    apex_threshold = 0.2 * track_width
-    if distance_from_center < apex_threshold:
-        reward += 1.0
+    # Apexing: Reward for being close to the inside edge of the turn (apex)
+    # apex_threshold = 0.2 * track_width
+    # if distance_from_center < apex_threshold:
+    #     reward += 1.0
 
     # Reward for maximizing speed on straight sections
     if curvature < 0.1 and speed > 3:
         reward += 1.0
 
-    #Penalize for unnecessary steering adjustments
-    if steering_angle_change > 0.3:
-        reward *= 0.8
+    # Penalize for unnecessary steering adjustments
+    # if steering_angle_change > 0.3:
+    #     reward *= 0.8
 
     # Use PID controller for steering correction
     steering_error = steering_angle_change
@@ -208,3 +202,4 @@ def reward_function(params):
         reward += MILESTONE_REWARD
 
     return float(reward)
+                                                                                
