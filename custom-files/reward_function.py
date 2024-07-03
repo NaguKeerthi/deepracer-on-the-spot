@@ -84,17 +84,22 @@ def reward_function(params):
 
     curvature = calculate_curvature(waypoints, closest_waypoints)
     if curvature < 0.1 :
-        SPEED_THRESHOLD_STRAIGHT = 2.5
+        if speed > 3:
+            if direction_diff< 5: 
+                reward *= 1.7
+            else:
+                reward*=1.5
         if speed > 2.5:
-            # if direction_diff< 3: 
-            #     reward *= 1.7
-            # else:
-            reward*=1.5
-        if speed > 1.5:
             if direction_diff< 5:
-                reward *= 1.1
+                reward *= 1.3
         elif speed < 1.5:# Penalize :
-            reward*=1.2
+            reward*=0.8
+    else:
+        if direction_diff > 5:
+            reward *= 0.8
+        else:
+            if speed > 1.5:
+                reward*=1.2
     # if curvature < 0.1:
     #     optimal_speed = 3.0  # Max speed on straight paths
     # else:
@@ -140,22 +145,23 @@ def reward_function(params):
         reward += 1.5  # Increased emphasis on smooth steering
 
     # Penalize if the direction difference is too large
-    DIRECTION_THRESHOLD = 4.0  # Reduced to tighten control
+    DIRECTION_THRESHOLD = 3.0  # Reduced to tighten control
     if direction_diff <= DIRECTION_THRESHOLD:
         reward *= 1.4
 
     # Apexing: Reward for being close to the inside edge of the turn (apex)
-    # apex_threshold = 0.2 * track_width
-    # if distance_from_center < apex_threshold:
-    #     reward += 1.0
+    apex_threshold = 0.2 * track_width
+    if distance_from_center < apex_threshold:
+        reward += 1.0
 
     # Reward for maximizing speed on straight sections
     if curvature < 0.1 and speed > 3:
         reward += 1.0
 
     # Penalize for unnecessary steering adjustments
-    # if steering_angle_change > 0.3:
-    #     reward *= 0.8
+    if curvature<0.1 and direction_diff==0:
+        if steering_angle_change > 0.1:
+            reward *= 0.8
 
     # Use PID controller for steering correction
     steering_error = steering_angle_change
@@ -180,25 +186,26 @@ def reward_function(params):
     reward += (progress / 100.0) * 1.5
 
     # Additional reward for completing the track faster
-    TOTAL_NUM_STEPS = 280
+    TOTAL_NUM_STEPS = 240
     if progress == 100:
         reward += 100 * (1 - (steps / TOTAL_NUM_STEPS))
 
     # Reward for consistency in speed
-    # SPEED_CONSISTENCY_THRESHOLD = 0.1
-    # if np.abs(speed - prev_speed) < SPEED_CONSISTENCY_THRESHOLD:
-    #     reward += 1.2
+    SPEED_CONSISTENCY_THRESHOLD = 0.1
+    if curvature<0.1:
+        if np.abs(speed - prev_speed) < SPEED_CONSISTENCY_THRESHOLD:
+            reward *= 1.2
 
     # Incremental Progress Reward
     reward += (progress / 100.0) * 2.0
 
     # Time-based milestones
     MILESTONE_REWARD = 5.0
-    if progress >= 25 and steps < 120:
+    if progress >= 25 and steps < 90:
         reward += MILESTONE_REWARD
-    if progress >= 50 and steps < 210:
+    if progress >= 50 and steps < 180:
         reward += MILESTONE_REWARD
-    if progress >= 75 and steps < 270:
+    if progress >= 75 and steps < 240:
         reward += MILESTONE_REWARD
 
     return float(reward)
