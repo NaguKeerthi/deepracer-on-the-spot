@@ -1,6 +1,5 @@
 import math
 import numpy as np
-from shapely.geometry import Point, LineString
 
 # Define the PID controller class
 class PIDController:
@@ -128,9 +127,9 @@ def reward_function(params):
     #     reward *= 0.8
 
     # Penalize for too much steering (to prevent zig-zag behavior)
-    # ABS_STEERING_THRESHOLD = 0.3
-    # if steering_angle > ABS_STEERING_THRESHOLD:
-    #     reward *= 0.4
+    ABS_STEERING_THRESHOLD = 0.3
+    if steering_angle > ABS_STEERING_THRESHOLD:
+        reward *= 0.4
 
     # Penalize for frequent steering changes
     OSCILLATION_THRESHOLD = 0.2
@@ -146,7 +145,7 @@ def reward_function(params):
 
     # Penalize if the direction difference is too large
     DIRECTION_THRESHOLD = 3.0  # Reduced to tighten control
-    if direction_diff <= DIRECTION_THRESHOLD:
+    if direction_diff < DIRECTION_THRESHOLD:
         reward *= 1.4
 
     # Apexing: Reward for being close to the inside edge of the turn (apex)
@@ -159,9 +158,8 @@ def reward_function(params):
         reward += 1.0
 
     # Penalize for unnecessary steering adjustments
-    if curvature<0.1 and direction_diff==0:
-        if steering_angle_change > 0.1:
-            reward *= 0.8
+    # if steering_angle_change > 0.3:
+    #     reward *= 0.8
 
     # Use PID controller for steering correction
     steering_error = steering_angle_change
@@ -172,7 +170,9 @@ def reward_function(params):
     # Reward for higher exit speed rather than entry speed
     if steps > 1 and speed > prev_speed:
         reward += 1.0
-
+    if curvature<0.1 and direction_diff==0:
+        if steering_angle_change > 0.1:
+            reward *= 0.8
     # Penalize for longer paths (encourage taking the shortest path)
     prev_x, prev_y = waypoints[closest_waypoints[0]]
     # distance_traveled = np.sqrt((x - prev_x)**2 + (y - prev_y)**2)
@@ -189,12 +189,15 @@ def reward_function(params):
     TOTAL_NUM_STEPS = 240
     if progress == 100:
         reward += 100 * (1 - (steps / TOTAL_NUM_STEPS))
-
-    # Reward for consistency in speed
     SPEED_CONSISTENCY_THRESHOLD = 0.1
     if curvature<0.1:
         if np.abs(speed - prev_speed) < SPEED_CONSISTENCY_THRESHOLD:
             reward *= 1.2
+
+    # Reward for consistency in speed
+    # SPEED_CONSISTENCY_THRESHOLD = 0.1
+    # if np.abs(speed - prev_speed) < SPEED_CONSISTENCY_THRESHOLD:
+    #     reward += 1.2
 
     # Incremental Progress Reward
     reward += (progress / 100.0) * 2.0
