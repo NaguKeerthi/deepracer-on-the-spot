@@ -154,7 +154,7 @@ def reward_function(params):
         reward += 1.0
 
     # Reward for maximizing speed on straight sections
-    if curvature < 0.1 and speed > 3:
+    if curvature < 0.1 and speed > 3.5:
         reward += 1.0
 
     # Penalize for unnecessary steering adjustments
