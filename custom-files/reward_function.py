@@ -1,5 +1,6 @@
 import math
 import numpy as np
+from shapely.geometry import Point, LineString
 
 # Define the PID controller class
 class PIDController:
@@ -83,22 +84,17 @@ def reward_function(params):
 
     curvature = calculate_curvature(waypoints, closest_waypoints)
     if curvature < 0.1 :
-        if speed > 3:
-            if direction_diff< 5: 
-                reward *= 1.7
-            else:
-                reward*=1.5
+        SPEED_THRESHOLD_STRAIGHT = 2.5
         if speed > 2.5:
+            # if direction_diff< 3: 
+            #     reward *= 1.7
+            # else:
+            reward*=1.5
+        if speed > 1.5:
             if direction_diff< 5:
-                reward *= 1.3
+                reward *= 1.1
         elif speed < 1.5:# Penalize :
-            reward*=0.8
-    else:
-        if direction_diff > 5:
-            reward *= 0.8
-        else:
-            if speed > 1.5:
-                reward*=1.2
+            reward*=1.2
     # if curvature < 0.1:
     #     optimal_speed = 3.0  # Max speed on straight paths
     # else:
@@ -127,9 +123,9 @@ def reward_function(params):
     #     reward *= 0.8
 
     # Penalize for too much steering (to prevent zig-zag behavior)
-    ABS_STEERING_THRESHOLD = 0.3
-    if steering_angle > ABS_STEERING_THRESHOLD:
-        reward *= 0.4
+    # ABS_STEERING_THRESHOLD = 0.3
+    # if steering_angle > ABS_STEERING_THRESHOLD:
+    #     reward *= 0.4
 
     # Penalize for frequent steering changes
     OSCILLATION_THRESHOLD = 0.2
@@ -144,17 +140,17 @@ def reward_function(params):
         reward += 1.5  # Increased emphasis on smooth steering
 
     # Penalize if the direction difference is too large
-    DIRECTION_THRESHOLD = 3.0  # Reduced to tighten control
-    if direction_diff < DIRECTION_THRESHOLD:
+    DIRECTION_THRESHOLD = 4.0  # Reduced to tighten control
+    if direction_diff <= DIRECTION_THRESHOLD:
         reward *= 1.4
 
     # Apexing: Reward for being close to the inside edge of the turn (apex)
-    apex_threshold = 0.2 * track_width
-    if distance_from_center < apex_threshold:
-        reward += 1.0
+    # apex_threshold = 0.2 * track_width
+    # if distance_from_center < apex_threshold:
+    #     reward += 1.0
 
     # Reward for maximizing speed on straight sections
-    if curvature < 0.1 and speed > 3.5:
+    if curvature < 0.1 and speed > 3:
         reward += 1.0
 
     # Penalize for unnecessary steering adjustments
@@ -170,9 +166,7 @@ def reward_function(params):
     # Reward for higher exit speed rather than entry speed
     if steps > 1 and speed > prev_speed:
         reward += 1.0
-    if curvature<0.1 and direction_diff==0:
-        if steering_angle_change > 0.1:
-            reward *= 0.8
+
     # Penalize for longer paths (encourage taking the shortest path)
     prev_x, prev_y = waypoints[closest_waypoints[0]]
     # distance_traveled = np.sqrt((x - prev_x)**2 + (y - prev_y)**2)
@@ -186,13 +180,9 @@ def reward_function(params):
     reward += (progress / 100.0) * 1.5
 
     # Additional reward for completing the track faster
-    TOTAL_NUM_STEPS = 240
+    TOTAL_NUM_STEPS = 280
     if progress == 100:
         reward += 100 * (1 - (steps / TOTAL_NUM_STEPS))
-    SPEED_CONSISTENCY_THRESHOLD = 0.1
-    if curvature<0.1:
-        if np.abs(speed - prev_speed) < SPEED_CONSISTENCY_THRESHOLD:
-            reward *= 1.2
 
     # Reward for consistency in speed
     # SPEED_CONSISTENCY_THRESHOLD = 0.1
@@ -204,11 +194,11 @@ def reward_function(params):
 
     # Time-based milestones
     MILESTONE_REWARD = 5.0
-    if progress >= 25 and steps < 90:
+    if progress >= 25 and steps < 120:
         reward += MILESTONE_REWARD
-    if progress >= 50 and steps < 180:
+    if progress >= 50 and steps < 210:
         reward += MILESTONE_REWARD
-    if progress >= 75 and steps < 240:
+    if progress >= 75 and steps < 270:
         reward += MILESTONE_REWARD
 
     return float(reward)
