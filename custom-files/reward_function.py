@@ -1,23 +1,5 @@
 import math
-import numpy as np
-
-class PIDController:
-    def __init__(self, kp, ki, kd):
-        self.kp = kp
-        self.ki = ki
-        self.kd = kd
-        self.integral = 0
-        self.previous_error = 0
-
-    def control(self, error):
-        self.integral += error
-        derivative = error - self.previous_error
-        self.previous_error = error
-        return self.kp * error + self.ki * self.integral + self.kd *derivative
-pid = PIDController(kp=1.0, ki=0.0, kd=0.1)
-
 def reward_function (params) :
-# cloned from HYDDR48-keerfin2more1
 # Extract input parameters
     track_width = params['track_width']
     distance_from_center = params['distance_from_center']
@@ -32,12 +14,10 @@ def reward_function (params) :
     waypoints = params['waypoints']
     steering_angle_change = params.get('steering_angle_change',0.0)
     prev_speed = params.get('prev_speed', speed)
-    prev_steering_angles = params.get('prev_steering_angles', [steering_angle])
-
     # Define markers for distance from center
-    # marker_1 = 0.1 * track_width
-    # marker_2 = 0.25 * track_width
-    # marker_3 = 0.5 * track_width
+    marker_1 = 0.1 * track_width
+    marker_2 = 0.25 * track_width
+    marker_3 = 0.5 * track_width
     # Initialize reward
     reward = 1.0
     # Reward for staying closer to the center line
@@ -66,43 +46,27 @@ def reward_function (params) :
     if direction_diff > 180:
         direction_diff = 360 - direction_diff
     #speed based on whether the path is straight or curved
-    STRAIGHT_PATH_THRESHOLD = 8.0
     # Threshold for straight path
     if closest_waypoints[1] in stwp:
-        if direction_diff > 5 or speed <2 :
-            reward*=0.8 
-        else :
-            thresh=(1+(5-direction_diff)+(speed-2)*0.5)
-            reward*=thresh
-        if speed > 3.5:
-            if direction_diff< 3: 
-                reward *= 1.7
-            else:
-                reward*=1.5
-        if speed > 3:
-            if direction_diff< 5: 
+        if direction_diff < 4:
+            if speed > 2.5:
                 reward *= 1.5
-            else:
-                reward*=1.3
-        elif speed > 2.5:
-            if direction_diff< 8: 
-                reward *= 1.2
-            else:
+            elif speed < 1.5:# Penalize if too slow on straight paths
+                reward *=0.8
+        else:
+            if speed > 2.5:
+                reward *= 1.3
+            elif speed > 2:
                 reward*=1.1
-        elif speed < 1.5:# Penalize if too slow on straight paths
-            reward *=0.8
     # Encourage higher speed on straight paths
         
     else:
     # Encourage slower speed on curves
-        SPEED_THRESHOLD_CURVE = 3.0
-        if direction_diff < 5:
-            if speed > 2.5:
-                reward*=1.5
-            if speed > 1.5:
-                reward*=1.2
-        else:
+        if direction_diff > 5.5:
             reward *= 0.8
+        else:
+            if speed > 1.5:
+                reward*=1.3
     # Reward for maintaining optimal speed
     OPTIMAL_SPEED = 3.5
     # if speed == OPTIMAL_SPEED:
@@ -116,30 +80,33 @@ def reward_function (params) :
     # if steering_angle > ABS_STEERING_THRESHOLD:
     #     reward *= 0.2
     # Reward for smooth steering
-    SMOOTH_STEERING_THRESHOLD = 2.0
+    SMOOTH_STEERING_THRESHOLD = 3.0
     if steering_angle_change < SMOOTH_STEERING_THRESHOLD:
         reward *= 1.6
     # Penalize for oscillation (rapid back-and-forth steering)
-    OSCILLATION_THRESHOLD = 0.2
-    if len(prev_steering_angles) > 1:
-        steering_deltas = np.abs(np.diff(prev_steering_angles[-5:]))
-        if np.any(steering_deltas > OSCILLATION_THRESHOLD):
-            reward *= 0.5
+    OSCILLATION_THRESHOLD = 15.0
+    if abs (steering_angle_change) > OSCILLATION_THRESHOLD:
+        reward *= 0.7
     # Penalize large direction differences
-    DIRECTION_THRESHOLD = 5.0
-    if direction_diff > DIRECTION_THRESHOLD:
-        reward *= 0.5
-    steering_error = steering_angle_change
-    pid_correction = pid.control(steering_error)
-    if abs(pid_correction) < 0.2:
-        reward += 2.0
+    # DIRECTION_THRESHOLD = 5.0
+    # if direction_diff > DIRECTION_THRESHOLD:
+    #     reward *= 0.5
     # Progress-based reward
     reward += (progress / 100.0) * 1.5
     # Additional reward for completing the track faster
-    TOTAL_NUM_STEPS = 270
+    if steps > 300:
+        roi= 50
+        TOTAL_NUM_STEPS = 300
+    elif steps >270 :
+        roi= 100
+        TOTAL_NUM_STEPS = 270
+    elif steps> 240 :
+        roi= 125
+        TOTAL_NUM_STEPS = 240
+
     if progress == 100:
-        reward += 100 * (1.5 - (steps / TOTAL_NUM_STEPS))
-    #Reward for consistency in speed
+        reward += roi * (1.5 - (steps / TOTAL_NUM_STEPS))
+    # Reward for consistency in speed
     # SPEED_CONSISTENCY_THRESHOLD = 0.2
     # if abs (speed - prev_speed)< SPEED_CONSISTENCY_THRESHOLD:
     #     reward *= 1.2
