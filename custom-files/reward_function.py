@@ -1,4 +1,21 @@
 import math
+import numpy as np
+
+class PIDController:
+    def __init__(self, kp, ki, kd):
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
+        self.integral = 0
+        self.previous_error = 0
+
+    def control(self, error):
+        self.integral += error
+        derivative = error - self.previous_error
+        self.previous_error = error
+        return self.kp * error + self.ki * self.integral + self.kd *derivative
+pid = PIDController(kp=1.0, ki=0.0, kd=0.1)
+
 def reward_function (params) :
 # Extract input parameters
     track_width = params['track_width']
@@ -14,6 +31,8 @@ def reward_function (params) :
     waypoints = params['waypoints']
     steering_angle_change = params.get('steering_angle_change',0.0)
     prev_speed = params.get('prev_speed', speed)
+    prev_steering_angles = params.get('prev_steering_angles', [steering_angle])
+
     # Define markers for distance from center
     marker_1 = 0.1 * track_width
     marker_2 = 0.25 * track_width
@@ -48,9 +67,9 @@ def reward_function (params) :
     #speed based on whether the path is straight or curved
     # Threshold for straight path
     if closest_waypoints[1] in stwp:
-        if direction_diff < 4:
+        if direction_diff < 3:
             if speed > 2.5:
-                reward *= (1.5+ (speed-2.5)*0.5+ (4-direction_diff)*0.75)
+                reward *= (1.5+ (speed-2.5)*0.5+ (3-direction_diff)*0.75)
             elif speed < 1.5:# Penalize if too slow on straight paths
                 reward *=0.8
         else:
@@ -84,10 +103,16 @@ def reward_function (params) :
     if steering_angle_change < SMOOTH_STEERING_THRESHOLD:
         reward *= 1.6
     # Penalize for oscillation (rapid back-and-forth steering)
-    OSCILLATION_THRESHOLD = 15.0
-    if abs (steering_angle_change) > OSCILLATION_THRESHOLD:
-        reward *= 0.7
+    OSCILLATION_THRESHOLD = 0.2
+    if len(prev_steering_angles) > 1:
+        steering_deltas = np.abs(np.diff(prev_steering_angles[-5:]))
+        if np.any(steering_deltas > OSCILLATION_THRESHOLD):
+            reward *= 0.5
     # Penalize large direction differences
+    steering_error = steering_angle_change
+    pid_correction = pid.control(steering_error)
+    if abs(pid_correction) < 0.2:
+        reward += 2.0
     DIRECTION_THRESHOLD = 2.0
     if direction_diff < DIRECTION_THRESHOLD:
         reward *= 1.3
@@ -95,16 +120,19 @@ def reward_function (params) :
     reward += (progress / 100.0) * 1.5
     # Additional reward for completing the track faster
     if steps > 300:
-        roi= 50
+        roi= 25
         TOTAL_NUM_STEPS = 300
     elif steps >270 :
         roi= 100
         TOTAL_NUM_STEPS = 270
     elif steps> 240 :
-        roi= 125
+        roi= 120
+        TOTAL_NUM_STEPS = 240
+    elif steps> 210 :
+        roi= 140
         TOTAL_NUM_STEPS = 240
     else :
-        roi= 150
+        roi= 180
         TOTAL_NUM_STEPS = 240
 
     if progress == 100:
