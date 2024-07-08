@@ -88,16 +88,16 @@ def reward_function (params) :
                 reward *= (1.5+ (speed-2)*0.5+ (4-direction_diff)*0.75)
     # Reward for maintaining optimal speed
     OPTIMAL_SPEED = 3.5
-    # if speed == OPTIMAL_SPEED:
-    #     reward *= 1.2
+    if speed == OPTIMAL_SPEED:
+        reward *= 1.2
     # Penalize excessive braking
-    # BRAKING_THRESHOLD = 0.4
-    # if prev_speed - speed > BRAKING_THRESHOLD: 
-    #     reward *= 0.8
+    BRAKING_THRESHOLD = 0.4
+    if prev_speed - speed > BRAKING_THRESHOLD: 
+        reward *= 0.8
     # Penalize too much steering to prevent zig-zag behavior
-    # ABS_STEERING_THRESHOLD = 5.0
-    # if steering_angle > ABS_STEERING_THRESHOLD:
-    #     reward *= 0.2
+    ABS_STEERING_THRESHOLD = 5.0
+    if steering_angle > ABS_STEERING_THRESHOLD:
+        reward *= 0.2
     # Reward for smooth steering
     SMOOTH_STEERING_THRESHOLD = 3.0
     if steering_angle_change < SMOOTH_STEERING_THRESHOLD:
@@ -128,11 +128,11 @@ def reward_function (params) :
     elif steps> 240 :
         roi= 120
         TOTAL_NUM_STEPS = 240
-    elif steps> 210 :
+    elif steps> 300 :
         roi= 140
         TOTAL_NUM_STEPS = 240
     else :
-        roi= 180
+        roi= 400
         TOTAL_NUM_STEPS = 240
 
     if progress == 100:
