@@ -50,7 +50,7 @@ def reward_function (params) :
     if closest_waypoints[1] in stwp:
         if direction_diff < 4:
             if speed > 2.5:
-                reward *= 1.5
+                reward *= (1.5+ (speed-2.5)*0.5+ (4-direction_diff)*0.75)
             elif speed < 1.5:# Penalize if too slow on straight paths
                 reward *=0.8
         else:
@@ -62,11 +62,11 @@ def reward_function (params) :
         
     else:
     # Encourage slower speed on curves
-        if direction_diff > 5.5:
+        if direction_diff > 4:
             reward *= 0.8
         else:
-            if speed > 1.5:
-                reward*=1.3
+            if speed > 2:
+                reward *= (1.5+ (speed-2)*0.5+ (4-direction_diff)*0.75)
     # Reward for maintaining optimal speed
     OPTIMAL_SPEED = 3.5
     # if speed == OPTIMAL_SPEED:
@@ -88,9 +88,9 @@ def reward_function (params) :
     if abs (steering_angle_change) > OSCILLATION_THRESHOLD:
         reward *= 0.7
     # Penalize large direction differences
-    # DIRECTION_THRESHOLD = 5.0
-    # if direction_diff > DIRECTION_THRESHOLD:
-    #     reward *= 0.5
+    DIRECTION_THRESHOLD = 2.0
+    if direction_diff < DIRECTION_THRESHOLD:
+        reward *= 1.3
     # Progress-based reward
     reward += (progress / 100.0) * 1.5
     # Additional reward for completing the track faster
@@ -103,12 +103,15 @@ def reward_function (params) :
     elif steps> 240 :
         roi= 125
         TOTAL_NUM_STEPS = 240
+    else :
+        roi= 150
+        TOTAL_NUM_STEPS = 240
 
     if progress == 100:
         reward += roi * (1.5 - (steps / TOTAL_NUM_STEPS))
     # Reward for consistency in speed
-    # SPEED_CONSISTENCY_THRESHOLD = 0.2
-    # if abs (speed - prev_speed)< SPEED_CONSISTENCY_THRESHOLD:
-    #     reward *= 1.2
+    SPEED_CONSISTENCY_THRESHOLD = 0.2
+    if abs (speed - prev_speed)< SPEED_CONSISTENCY_THRESHOLD:
+        reward *= 1.2
     
     return float (reward)
